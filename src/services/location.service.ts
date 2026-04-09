@@ -16,11 +16,22 @@ class LocationService {
 
   async requestPermission(): Promise<boolean> {
     if (Platform.OS === 'android') {
+      const finePermission = PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
+      const coarsePermission = PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION;
+
+      const hasFine = await PermissionsAndroid.check(finePermission);
+      const hasCoarse = await PermissionsAndroid.check(coarsePermission);
+
+      if (hasFine || hasCoarse) {
+        return true;
+      }
+
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        finePermission,
         {
           title: 'Location Permission',
-          message: 'CloseLoop needs location access only while sharing an active session.',
+          message:
+            'SafeTraq needs location access only while an active live session is running.',
           buttonPositive: 'Allow',
           buttonNegative: 'Deny',
         },

@@ -78,7 +78,12 @@ const CircleDetailScreen = ({ route, navigation }: Props) => {
 
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => navigation.navigate('LiveShareSetup', { preselectedCircleId: circleId })}
+            onPress={() =>
+              navigation.navigate('MainTabs', {
+                screen: 'LiveShareSetup',
+                params: { preselectedCircleId: circleId },
+              })
+            }
           >
             <Text style={styles.primaryButtonText}>Share with this circle</Text>
           </TouchableOpacity>

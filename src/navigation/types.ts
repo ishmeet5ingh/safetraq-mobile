@@ -1,15 +1,23 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
+
+export type AuthMode = 'login' | 'register';
+
 export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  Landing: undefined;
+  Auth: { mode?: AuthMode } | undefined;
+};
+
+export type AppTabParamList = {
+  Home: undefined;
+  LiveShareSetup: { preselectedCircleId?: string } | undefined;
+  Circles: undefined;
+  Invites: undefined;
+  PrivacyDashboard: undefined;
 };
 
 export type AppStackParamList = {
-  Home: undefined;
-  Circles: undefined;
+  MainTabs: NavigatorScreenParams<AppTabParamList>;
   CircleDetail: { circleId: string };
-  LiveShareSetup: { preselectedCircleId?: string } | undefined;
-  ActiveSession: { sessionId?: string } | undefined;
-  PrivacyDashboard: undefined;
+  ActiveSession: { sessionId: string };
   SOS: { sessionId?: string } | undefined;
-  Invites: undefined
 };

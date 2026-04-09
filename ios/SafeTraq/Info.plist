@@ -34,7 +34,11 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>SafeTraq uses your location during live sharing so trusted circles can follow your journey and receive accurate emergency updates.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Ionicons.ttf</string>
+	</array>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

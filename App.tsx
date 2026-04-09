@@ -1,3 +1,4 @@
+import "./global.css"
 import React, { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -5,6 +6,7 @@ import { useAppDispatch } from './src/hooks/redux';
 import { store } from './src/store';
 import { restoreSessionThunk } from './src/store/slices/authSlice';
 import { fetchActiveSessionThunk } from './src/store/slices/sessionsSlice';
+import { ThemeProvider } from './src/context/ThemeContext';
 
 const Bootstrap = () => {
   const dispatch = useAppDispatch();
@@ -27,7 +29,9 @@ const Bootstrap = () => {
 const App = () => {
   return (
     <Provider store={store}>
+    <ThemeProvider>
       <Bootstrap />
+    </ThemeProvider>
     </Provider>
   );
 };

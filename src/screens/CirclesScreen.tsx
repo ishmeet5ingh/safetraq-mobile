@@ -9,13 +9,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { AppStackParamList } from '../navigation/types';
+import { AppStackParamList, AppTabParamList } from '../navigation/types';
 import { CircleType } from '../types/circle';
 import { createCircleThunk, fetchCirclesThunk } from '../store/slices/circlesSlice';
 
-type Props = NativeStackScreenProps<AppStackParamList, 'Circles'>;
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<AppTabParamList, 'Circles'>,
+  NativeStackScreenProps<AppStackParamList>
+>;
 
 const circleTypes: CircleType[] = ['family', 'partner', 'friends', 'team'];
 

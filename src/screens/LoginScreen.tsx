@@ -14,7 +14,7 @@ import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { loginThunk } from '../store/slices/authSlice';
 import { AuthStackParamList } from '../navigation/types';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Auth'>;
 
 const LoginScreen = ({ navigation }: Props) => {
   const dispatch = useAppDispatch();
@@ -68,7 +68,9 @@ const LoginScreen = ({ navigation }: Props) => {
           {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Login</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Auth', { mode: 'register' })}
+        >
           <Text style={styles.link}>Don&apos;t have an account? Register</Text>
         </TouchableOpacity>
       </View>

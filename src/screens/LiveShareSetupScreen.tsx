@@ -9,14 +9,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { AppStackParamList } from '../navigation/types';
+import { AppStackParamList, AppTabParamList } from '../navigation/types';
 import { fetchCirclesThunk } from '../store/slices/circlesSlice';
 import { startSessionThunk } from '../store/slices/sessionsSlice';
 import { SESSION_DURATIONS } from '../utils/constants';
 
-type Props = NativeStackScreenProps<AppStackParamList, 'LiveShareSetup'>;
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<AppTabParamList, 'LiveShareSetup'>,
+  NativeStackScreenProps<AppStackParamList>
+>;
 
 const LiveShareSetupScreen = ({ route, navigation }: Props) => {
   const dispatch = useAppDispatch();
@@ -51,7 +56,7 @@ const LiveShareSetupScreen = ({ route, navigation }: Props) => {
     );
 
     if (startSessionThunk.fulfilled.match(result)) {
-      navigation.replace('ActiveSession', { sessionId: result.payload._id });
+      navigation.navigate('ActiveSession', { sessionId: result.payload._id });
       return;
     }
 

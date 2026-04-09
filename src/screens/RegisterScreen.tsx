@@ -14,7 +14,7 @@ import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { registerThunk } from '../store/slices/authSlice';
 import { AuthStackParamList } from '../navigation/types';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Auth'>;
 
 const RegisterScreen = ({ navigation }: Props) => {
   const dispatch = useAppDispatch();
@@ -82,7 +82,9 @@ const RegisterScreen = ({ navigation }: Props) => {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Auth', { mode: 'login' })}
+        >
           <Text style={styles.link}>Already have an account? Login</Text>
         </TouchableOpacity>
       </View>

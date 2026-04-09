@@ -220,31 +220,90 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
       });
     });
 
+    const beginOwnerTracking = async () => {
+      const hasPermission = await locationService.requestPermission();
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (!hasPermission) {
+        setStatusText('Location permission is required to update your live position');
+        Alert.alert(
+          'Location Required',
+          'Allow location access so your trusted viewers can see your live position during this session.',
+        );
+        return;
+      }
+
+      try {
+        const initialLocation = await locationService.getCurrentLocation();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCurrentUserMarker({
+          id: user._id,
+          latitude: initialLocation.latitude,
+          longitude: initialLocation.longitude,
+          label: 'You',
+        });
+
+        socketService.emitSessionLocationUpdate({
+          sessionId,
+          latitude: initialLocation.latitude,
+          longitude: initialLocation.longitude,
+          accuracy: initialLocation.accuracy,
+          speed: initialLocation.speed,
+        });
+      } catch (error) {
+        if (isMounted) {
+          console.log('Failed to fetch initial session location', error);
+          setStatusText('Waiting for location fix...');
+        }
+      }
+
+      try {
+        await locationService.startTracking(
+          async (location) => {
+            if (!isMounted) return;
+
+            setCurrentUserMarker({
+              id: user._id,
+              latitude: location.latitude,
+              longitude: location.longitude,
+              label: 'You',
+            });
+
+            setStatusText('Live location active');
+
+            socketService.emitSessionLocationUpdate({
+              sessionId,
+              latitude: location.latitude,
+              longitude: location.longitude,
+              accuracy: location.accuracy,
+              speed: location.speed,
+            });
+          },
+          (error) => {
+            console.log('Active session location error', error);
+            if (isMounted) {
+              setStatusText('Location updates unavailable');
+            }
+          },
+          batteryAwareMode ? 'balanced' : 'high',
+        );
+      } catch (error) {
+        console.log('Unable to start session tracking', error);
+        if (isMounted) {
+          setStatusText('Unable to start location tracking');
+        }
+      }
+    };
+
     if (isOwner && activeSession.status === 'active') {
-      void locationService.startTracking(
-        async (location) => {
-          if (!isMounted) return;
-
-          setCurrentUserMarker({
-            id: user._id,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            label: 'You',
-          });
-
-          socketService.emitSessionLocationUpdate({
-            sessionId,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            accuracy: location.accuracy,
-            speed: location.speed,
-          });
-        },
-        (error) => {
-          console.log('Active session location error', error);
-        },
-        batteryAwareMode ? 'balanced' : 'high',
-      );
+      void beginOwnerTracking();
     }
 
     if (activeSession.latestLocation && isOwner) {
@@ -328,7 +387,11 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
           <Text style={styles.emptyTitle}>No active session found</Text>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => navigation.replace('LiveShareSetup')}
+            onPress={() =>
+              navigation.replace('MainTabs', {
+                screen: 'LiveShareSetup',
+              })
+            }
           >
             <Text style={styles.primaryButtonText}>Start one now</Text>
           </TouchableOpacity>
