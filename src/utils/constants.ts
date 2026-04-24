@@ -1,5 +1,6 @@
-export const API_BASE_URL = 'http://192.168.1.72:5002/api';
-export const SOCKET_BASE_URL = 'http://192.168.1.69:5002';
+export const SERVER_BASE_URL = 'http://192.168.1.72:5002';
+export const API_BASE_URL = `${SERVER_BASE_URL}/api`;
+export const SOCKET_BASE_URL = SERVER_BASE_URL;
 
 export const STORAGE_KEYS = {
   AUTH_TOKEN: 'auth_token',

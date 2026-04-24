@@ -1,6 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemeContext } from '../context/ThemeContext';
 import LeafletMap, { MapMarker } from '../components/LeafletMap';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { AppStackParamList } from '../navigation/types';
@@ -32,14 +41,31 @@ type ActiveSharer = {
   updatedAt: string;
 };
 
+const getStatusTone = (status?: string) => {
+  if (status === 'active') {
+    return 'bg-green-100 dark:bg-green-500/15 text-brand-live';
+  }
+
+  if (status === 'paused') {
+    return 'bg-amber-100 dark:bg-amber-500/15 text-brand-warning';
+  }
+
+  return 'bg-light-muted dark:bg-dark-muted text-light-subtext dark:text-dark-subtext';
+};
+
 const ActiveSessionScreen = ({ route, navigation }: Props) => {
   const dispatch = useAppDispatch();
+  const { isDark } = useThemeContext();
   const { token, user } = useAppSelector((state) => state.auth);
   const { activeSession, loading } = useAppSelector((state) => state.sessions);
-  const batteryAwareMode = useAppSelector((state) => state.privacy.batteryAwareMode);
+  const batteryAwareMode = useAppSelector(
+    (state) => state.privacy.batteryAwareMode,
+  );
 
   const [remoteMarkers, setRemoteMarkers] = useState<MapMarker[]>([]);
-  const [currentUserMarker, setCurrentUserMarker] = useState<MapMarker | null>(null);
+  const [currentUserMarker, setCurrentUserMarker] = useState<MapMarker | null>(
+    null,
+  );
   const [statusText, setStatusText] = useState('Connecting...');
 
   useEffect(() => {
@@ -58,7 +84,8 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
       }
 
       try {
-        const activeSharers: ActiveSharer[] = await circleService.getActiveSharers(circleId);
+        const activeSharers: ActiveSharer[] =
+          await circleService.getActiveSharers(circleId);
 
         const mappedMarkers = activeSharers
           .filter(
@@ -70,13 +97,16 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
             id: item.userId,
             latitude: item.latitude,
             longitude: item.longitude,
-            label: item.userId === user?._id ? 'You' : item.name || item.email || 'Circle member',
+            label:
+              item.userId === user?._id
+                ? 'You'
+                : item.name || item.email || 'Circle member',
           }));
 
         const me = mappedMarkers.find((item) => item.id === user?._id) || null;
         const others = mappedMarkers.filter((item) => item.id !== user?._id);
 
-        setCurrentUserMarker(me);
+        setCurrentUserMarker((prev) => me || prev);
         setRemoteMarkers(others);
         setStatusText(`Active sharers: ${mappedMarkers.length}`);
       } catch (error) {
@@ -92,9 +122,12 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
     }
 
     let isMounted = true;
+    let refreshInterval: ReturnType<typeof setInterval> | null = null;
     const sessionId = activeSession._id;
     const isOwner = activeSession.ownerUserId === user._id;
     const circleId = activeSession.circle?._id;
+    const shouldPublishLocation =
+      activeSession.status === 'active' && (!!circleId || isOwner);
 
     const socket = socketService.connect(token);
     socketService.emitJoinSession(sessionId);
@@ -131,9 +164,14 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
 
     const unsubConnected = socketService.onConnected(() => {
       if (isMounted) {
+        socketService.emitJoinSession(sessionId);
         setStatusText((prev) =>
           prev === 'Connecting...' ? 'Live socket connected' : prev,
         );
+
+        if (circleId) {
+          void refreshCircleSharers(circleId);
+        }
       }
     });
 
@@ -144,13 +182,13 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
     });
 
     const unsubUpdated = socketService.onSessionUpdated(async (payload) => {
-      if (!isMounted) return;
+      if (!isMounted) {
+        return;
+      }
 
       const sameSession = payload.sessionId === sessionId;
       const sameCircle =
-        !!payload.circleId &&
-        !!circleId &&
-        payload.circleId === circleId;
+        !!payload.circleId && !!circleId && payload.circleId === circleId;
 
       if (!sameSession && !sameCircle) {
         return;
@@ -171,56 +209,61 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
       }
     });
 
-    const unsubCircleChanged = socketService.onCircleActiveSharersChanged(async (payload) => {
-      if (!isMounted) return;
-      if (!circleId) return;
-      if (payload.circleId !== circleId) return;
-
-      await refreshCircleSharers(circleId);
-    });
-
-    const unsubLocation = socketService.onSessionLocation((payload: SessionLocationPayload) => {
-      if (!isMounted) return;
-
-      if (circleId) {
-        const isSameCircleMemberUpdate =
-          payload.circleId && payload.circleId === circleId;
-
-        const isCurrentSessionUpdate = payload.sessionId === sessionId;
-
-        if (!isSameCircleMemberUpdate && !isCurrentSessionUpdate) {
+    const unsubCircleChanged = socketService.onCircleActiveSharersChanged(
+      async (payload) => {
+        if (!isMounted || !circleId || payload.circleId !== circleId) {
           return;
         }
-      } else if (payload.sessionId !== sessionId) {
-        return;
-      }
 
-      if (payload.userId === user._id) {
-        setCurrentUserMarker({
-          id: payload.userId,
-          latitude: payload.latitude,
-          longitude: payload.longitude,
-          label: 'You',
-        });
-        return;
-      }
+        await refreshCircleSharers(circleId);
+      },
+    );
 
-      setRemoteMarkers((prev) => {
-        const filtered = prev.filter((item) => item.id !== payload.userId);
+    const unsubLocation = socketService.onSessionLocation(
+      (payload: SessionLocationPayload) => {
+        if (!isMounted) {
+          return;
+        }
 
-        return [
-          ...filtered,
-          {
+        if (circleId) {
+          const isSameCircleMemberUpdate =
+            payload.circleId && payload.circleId === circleId;
+          const isCurrentSessionUpdate = payload.sessionId === sessionId;
+
+          if (!isSameCircleMemberUpdate && !isCurrentSessionUpdate) {
+            return;
+          }
+        } else if (payload.sessionId !== sessionId) {
+          return;
+        }
+
+        if (payload.userId === user._id) {
+          setCurrentUserMarker({
             id: payload.userId,
             latitude: payload.latitude,
             longitude: payload.longitude,
-            label: payload.name || payload.email || 'Circle member',
-          },
-        ];
-      });
-    });
+            label: 'You',
+          });
+          return;
+        }
 
-    const beginOwnerTracking = async () => {
+        setRemoteMarkers((prev) => {
+          const filtered = prev.filter((item) => item.id !== payload.userId);
+
+          return [
+            ...filtered,
+            {
+              id: payload.userId,
+              latitude: payload.latitude,
+              longitude: payload.longitude,
+              label: payload.name || payload.email || 'Circle member',
+            },
+          ];
+        });
+      },
+    );
+
+    const beginParticipantTracking = async () => {
       const hasPermission = await locationService.requestPermission();
 
       if (!isMounted) {
@@ -228,7 +271,9 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
       }
 
       if (!hasPermission) {
-        setStatusText('Location permission is required to update your live position');
+        setStatusText(
+          'Location permission is required to update your live position',
+        );
         Alert.alert(
           'Location Required',
           'Allow location access so your trusted viewers can see your live position during this session.',
@@ -267,7 +312,9 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
       try {
         await locationService.startTracking(
           async (location) => {
-            if (!isMounted) return;
+            if (!isMounted) {
+              return;
+            }
 
             setCurrentUserMarker({
               id: user._id,
@@ -302,18 +349,28 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
       }
     };
 
-    if (isOwner && activeSession.status === 'active') {
-      void beginOwnerTracking();
+    if (shouldPublishLocation) {
+      void beginParticipantTracking();
     }
 
-    if (activeSession.latestLocation && isOwner) {
+    if (circleId) {
+      refreshInterval = setInterval(() => {
+        void refreshCircleSharers(circleId);
+      }, 5000);
+    }
+
+    const latestLocation = activeSession.latestLocation;
+
+    if (latestLocation && isOwner) {
       setCurrentUserMarker((prev) => {
-        if (prev) return prev;
+        if (prev) {
+          return prev;
+        }
 
         return {
           id: user._id,
-          latitude: activeSession.latestLocation!.latitude,
-          longitude: activeSession.latestLocation!.longitude,
+          latitude: latestLocation.latitude,
+          longitude: latestLocation.longitude,
           label: 'You',
         };
       });
@@ -328,6 +385,10 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
       unsubLocation();
       socketService.emitLeaveSession(sessionId);
       locationService.stopTracking();
+
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
 
       if (socket && !route.params?.sessionId) {
         socketService.disconnect();
@@ -352,7 +413,10 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
   }, [remoteMarkers.length, currentUserMarker]);
 
   const handlePauseResume = async () => {
-    if (!activeSession?._id) return;
+    console.log("pressed")
+    if (!activeSession?._id) {
+      return;
+    }
 
     if (activeSession.status === 'active') {
       await dispatch(pauseSessionThunk(activeSession._id));
@@ -364,7 +428,10 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
   };
 
   const handleStop = async () => {
-    if (!activeSession?._id) return;
+    if (!activeSession?._id) {
+      return;
+    }
+
     await dispatch(stopSessionThunk(activeSession._id));
     locationService.stopTracking();
     navigation.goBack();
@@ -372,93 +439,185 @@ const ActiveSessionScreen = ({ route, navigation }: Props) => {
 
   if (!activeSession && loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
-          <Text style={styles.helper}>Loading active session...</Text>
-        </View>
-      </SafeAreaView>
+      <View className="flex-1 bg-light-bg dark:bg-dark-bg">
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor="transparent"
+          translucent
+        />
+        <SafeAreaView className="flex-1 bg-light-bg dark:bg-dark-bg">
+          <View className="flex-1 items-center justify-center px-6">
+            <View className="rounded-[12px] border border-light-border bg-light-card px-5 py-6 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <Text className="text-[16px] text-light-subtext dark:text-dark-subtext">
+                Loading active session...
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
   if (!activeSession) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
-          <Text style={styles.emptyTitle}>No active session found</Text>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() =>
-              navigation.replace('MainTabs', {
-                screen: 'LiveShareSetup',
-              })
-            }
-          >
-            <Text style={styles.primaryButtonText}>Start one now</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View className="flex-1 bg-light-bg dark:bg-dark-bg">
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor="transparent"
+          translucent
+        />
+        <SafeAreaView className="flex-1 bg-light-bg dark:bg-dark-bg">
+          <View className="flex-1 items-center justify-center px-6">
+            <View className="w-full rounded-[14px] border border-light-border bg-light-card px-5 py-6 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
+                No active session found
+              </Text>
+              <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                Start a live share to continue.
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.92}
+                className="mt-5 rounded-[10px] bg-brand-primary px-4 py-4"
+                onPress={() =>
+                  navigation.replace('MainTabs', {
+                    screen: 'LiveShareSetup',
+                  })
+                }
+              >
+                <Text className="text-center text-[15px] font-semibold text-white">
+                  Start one now
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerCard}>
-        <Text style={styles.title}>{activeSession.title}</Text>
-        <Text style={styles.helper}>
-          Status: {activeSession.status} • Markers: {markerCount}
-        </Text>
-        <Text style={styles.helper}>{statusText}</Text>
-        {activeSession.circle?.name ? (
-          <Text style={styles.helper}>Circle: {activeSession.circle.name}</Text>
-        ) : null}
-      </View>
+    <View className="flex-1 bg-light-bg dark:bg-dark-bg">
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
 
-      <View style={styles.mapWrapper}>
-        <LeafletMap
-          currentUserMarker={currentUserMarker}
-          otherMarkers={remoteMarkers}
-        />
-      </View>
+      <SafeAreaView
+        edges={['left', 'right', 'bottom']}
+        className="flex-1 bg-light-bg dark:bg-dark-bg"
+      >
+        <View className="flex-1 px-5 pb-5 pt-4">
+          <View className="rounded-[14px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+            <View className="mb-4 flex-row items-start justify-between">
+              <View className="max-w-[76%]">
+                <Text className="text-[12px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                  Active session
+                </Text>
+                <Text className="mt-2 text-[24px] font-semibold leading-[29px] text-light-text dark:text-dark-text">
+                  {activeSession.title}
+                </Text>
+                <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                  {statusText}
+                </Text>
+              </View>
 
-      <View style={styles.controlsRow}>
-        <TouchableOpacity style={styles.secondaryButton} onPress={handlePauseResume}>
-          <Text style={styles.secondaryButtonText}>
-            {activeSession.status === 'active' ? 'Pause' : 'Resume'}
-          </Text>
-        </TouchableOpacity>
+              <View
+                className={`rounded-full px-3 py-2 ${getStatusTone(
+                  activeSession.status,
+                )}`}
+              >
+                <Text className="text-[11px] font-semibold uppercase tracking-[1px]">
+                  {activeSession.status}
+                </Text>
+              </View>
+            </View>
 
-        <TouchableOpacity
-          style={styles.sosButton}
-          onPress={() => navigation.navigate('SOS', { sessionId: activeSession._id })}
-        >
-          <Text style={styles.sosButtonText}>SOS</Text>
-        </TouchableOpacity>
+            <View className="flex-row justify-between">
+              <View className="w-[31.5%] rounded-[10px] bg-light-bg px-3 py-4 dark:bg-dark-bg">
+                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                  Markers
+                </Text>
+                <Text className="mt-2 text-[18px] font-semibold text-light-text dark:text-dark-text">
+                  {markerCount}
+                </Text>
+              </View>
 
-        <TouchableOpacity style={styles.stopButton} onPress={handleStop}>
-          <Text style={styles.stopButtonText}>Stop</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+              <View className="w-[31.5%] rounded-[10px] bg-light-bg px-3 py-4 dark:bg-dark-bg">
+                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                  Circle
+                </Text>
+                <Text className="mt-2 text-[15px] font-semibold text-light-text dark:text-dark-text">
+                  {activeSession.circle?.name || 'Private'}
+                </Text>
+              </View>
+
+              <View className="w-[31.5%] rounded-[10px] bg-light-bg px-3 py-4 dark:bg-dark-bg">
+                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                  Mode
+                </Text>
+                <Text className="mt-2 text-[15px] font-semibold text-light-text dark:text-dark-text">
+                  {batteryAwareMode ? 'Balanced' : 'Precise'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View className="mt-5 flex-1 overflow-hidden rounded-[12px] border border-light-border bg-light-card shadow-soft dark:border-dark-border dark:bg-dark-card">
+            <LeafletMap
+              currentUserMarker={currentUserMarker}
+              otherMarkers={remoteMarkers}
+            />
+          </View>
+
+          <View className="mt-5 flex-row justify-between">
+            <TouchableOpacity
+              activeOpacity={0.9}
+              className="w-[31.5%] rounded-[10px] border border-light-border bg-light-card px-3 py-4 dark:border-dark-border dark:bg-dark-card"
+              onPress={handlePauseResume}
+            >
+              <View className="items-center">
+                <Ionicons
+                  name={activeSession.status === 'active' ? 'pause' : 'play'}
+                  size={18}
+                  color={isDark ? '#F8FAFC' : '#0F172A'}
+                />
+                <Text className="mt-2 text-[14px] font-semibold text-light-text dark:text-dark-text">
+                  {activeSession.status === 'active' ? 'Pause' : 'Resume'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              className="w-[31.5%] rounded-[10px] bg-brand-danger px-3 py-4"
+              onPress={() => navigation.navigate('SOS', { sessionId: activeSession._id })}
+            >
+              <View className="items-center">
+                <Ionicons name="warning" size={18} color="#FFFFFF" />
+                <Text className="mt-2 text-[14px] font-semibold text-white">
+                  SOS
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              className="w-[31.5%] rounded-[10px] bg-light-text px-3 py-4 dark:bg-dark-muted"
+              onPress={handleStop}
+            >
+              <View className="items-center">
+                <Ionicons name="square" size={18} color="#FFFFFF" />
+                <Text className="mt-2 text-[14px] font-semibold text-white">
+                  Stop
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 };
 
 export default ActiveSessionScreen;
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 14 },
-  headerCard: { margin: 16, marginBottom: 0, backgroundColor: '#ffffff', borderRadius: 20, padding: 18 },
-  title: { fontSize: 22, fontWeight: '700', color: '#111827' },
-  helper: { marginTop: 6, fontSize: 14, color: '#64748b' },
-  mapWrapper: { flex: 1, margin: 16, borderRadius: 20, overflow: 'hidden' },
-  controlsRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingBottom: 16 },
-  secondaryButton: { flex: 1, backgroundColor: '#e2e8f0', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  secondaryButtonText: { color: '#0f172a', fontWeight: '700' },
-  sosButton: { flex: 1, backgroundColor: '#fee2e2', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  sosButtonText: { color: '#b91c1c', fontWeight: '800' },
-  stopButton: { flex: 1, backgroundColor: '#111827', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  stopButtonText: { color: '#ffffff', fontWeight: '700' },
-  primaryButton: { backgroundColor: '#2563eb', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14 },
-  primaryButtonText: { color: '#fff', fontWeight: '700' },
-});

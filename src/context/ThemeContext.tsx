@@ -7,8 +7,8 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Appearance, ColorSchemeName } from 'react-native';
-import { colorScheme } from 'nativewind';
+import { Appearance } from 'react-native';
+import { useColorScheme } from 'nativewind';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 type ActiveTheme = 'light' | 'dark';
@@ -35,18 +35,15 @@ export const ThemeProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
+  const {
+    colorScheme: nativewindColorScheme,
+    setColorScheme,
+  } = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [systemTheme, setSystemTheme] = useState<ActiveTheme>(getSystemTheme());
 
   const activeTheme: ActiveTheme =
-    themeMode === 'system' ? systemTheme : themeMode;
-
-  const applyTheme = useCallback((mode: ThemeMode, currentSystem?: ActiveTheme) => {
-    const resolvedTheme =
-      mode === 'system' ? currentSystem ?? getSystemTheme() : mode;
-
-    colorScheme.set(resolvedTheme);
-  }, []);
+    nativewindColorScheme ?? (themeMode === 'system' ? systemTheme : themeMode);
 
   useEffect(() => {
     const loadTheme = async () => {
@@ -60,15 +57,15 @@ export const ThemeProvider = ({
             : 'system';
 
         setThemeModeState(validTheme);
-        applyTheme(validTheme, getSystemTheme());
+        setColorScheme(validTheme);
       } catch (error) {
         setThemeModeState('system');
-        applyTheme('system', getSystemTheme());
+        setColorScheme('system');
       }
     };
 
     void loadTheme();
-  }, [applyTheme]);
+  }, [setColorScheme]);
 
   useEffect(() => {
     const subscription = Appearance.addChangeListener(({ colorScheme: next }) => {
@@ -76,22 +73,22 @@ export const ThemeProvider = ({
       setSystemTheme(nextSystemTheme);
 
       if (themeMode === 'system') {
-        colorScheme.set(nextSystemTheme);
+        setColorScheme('system');
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [themeMode]);
+  }, [setColorScheme, themeMode]);
 
   const setThemeMode = useCallback(
     async (mode: ThemeMode) => {
       setThemeModeState(mode);
-      applyTheme(mode, systemTheme);
+      setColorScheme(mode);
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
     },
-    [applyTheme, systemTheme],
+    [setColorScheme],
   );
 
   const toggleTheme = useCallback(async () => {

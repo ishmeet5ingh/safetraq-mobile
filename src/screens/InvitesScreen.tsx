@@ -3,12 +3,15 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  SafeAreaView,
-  StyleSheet,
+  StatusBar,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemeContext } from '../context/ThemeContext';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
   acceptInviteThunk,
@@ -18,10 +21,12 @@ import {
 
 const InvitesScreen = () => {
   const dispatch = useAppDispatch();
+  const { isDark } = useThemeContext();
+  const tabBarHeight = useBottomTabBarHeight();
   const { invites, loading, error } = useAppSelector((state) => state.invites);
 
   useEffect(() => {
-    dispatch(fetchPendingInvitesThunk());
+    void dispatch(fetchPendingInvitesThunk());
   }, [dispatch]);
 
   useEffect(() => {
@@ -35,7 +40,10 @@ const InvitesScreen = () => {
     if (acceptInviteThunk.fulfilled.match(resultAction)) {
       Alert.alert('Success', 'Invite accepted successfully');
     } else {
-      Alert.alert('Error', (resultAction.payload as string) || 'Failed to accept invite');
+      Alert.alert(
+        'Error',
+        (resultAction.payload as string) || 'Failed to accept invite',
+      );
     }
   };
 
@@ -44,123 +52,128 @@ const InvitesScreen = () => {
     if (declineInviteThunk.fulfilled.match(resultAction)) {
       Alert.alert('Done', 'Invite declined');
     } else {
-      Alert.alert('Error', (resultAction.payload as string) || 'Failed to decline invite');
+      Alert.alert(
+        'Error',
+        (resultAction.payload as string) || 'Failed to decline invite',
+      );
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Pending Invites</Text>
+    <View className="flex-1 bg-light-bg dark:bg-dark-bg">
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
 
-      {loading ? (
-        <View style={styles.loaderWrapper}>
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
-      ) : invites.length === 0 ? (
-        <View style={styles.emptyWrapper}>
-          <Text style={styles.emptyText}>No pending invites</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={invites}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.circleName}>{item.circleName}</Text>
-              <Text style={styles.meta}>Type: {item.circleType}</Text>
-              <Text style={styles.meta}>Role: {item.role}</Text>
+      <SafeAreaView
+        edges={['left', 'right']}
+        className="flex-1 bg-light-bg dark:bg-dark-bg"
+      >
+        <View className="px-5 pb-5 pt-4">
+          <View className="rounded-[14px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+            <View className="mb-4 flex-row items-start justify-between">
+              <View className="max-w-[76%]">
+                <Text className="text-[12px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                  Invite center
+                </Text>
+                <Text className="mt-2 text-[24px] font-semibold leading-[29px] text-light-text dark:text-dark-text">
+                  Review new requests
+                </Text>
+                <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                  Approve or decline before they join.
+                </Text>
+              </View>
 
-              <View style={styles.actionsRow}>
-                <TouchableOpacity
-                  style={[styles.button, styles.acceptButton]}
-                  onPress={() => handleAccept(item._id)}
-                >
-                  <Text style={styles.buttonText}>Accept</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.button, styles.declineButton]}
-                  onPress={() => handleDecline(item._id)}
-                >
-                  <Text style={styles.buttonText}>Decline</Text>
-                </TouchableOpacity>
+              <View className="h-12 w-12 items-center justify-center rounded-[8px] bg-brand-accent">
+                <Ionicons name="mail-open" size={22} color="#FFFFFF" />
               </View>
             </View>
+
+            <View className="rounded-[10px] bg-light-bg px-4 py-4 dark:bg-dark-bg">
+              <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                Pending invites
+              </Text>
+              <Text className="mt-2 text-[20px] font-semibold text-light-text dark:text-dark-text">
+                {invites.length}
+              </Text>
+            </View>
+          </View>
+
+          {loading ? (
+            <View className="mt-5 rounded-[12px] border border-light-border bg-light-card px-5 py-10 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <ActivityIndicator size="large" color="#1D4ED8" />
+              <Text className="mt-4 text-center text-[14px] text-light-subtext dark:text-dark-subtext">
+                Loading pending invites...
+              </Text>
+            </View>
+          ) : invites.length === 0 ? (
+            <View className="mt-5 rounded-[12px] border border-light-border bg-light-card px-5 py-8 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
+                No pending invites
+              </Text>
+              <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                New requests will appear here.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={invites}
+              keyExtractor={(item) => item._id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingTop: 20,
+                paddingBottom: tabBarHeight + 18,
+              }}
+              renderItem={({ item }) => (
+                <View className="mb-4 rounded-[12px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+                  <View className="flex-row items-start justify-between">
+                    <View className="max-w-[76%]">
+                      <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
+                        {item.circleName}
+                      </Text>
+                      <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                        Circle type: {item.circleType} {'\n'}Role: {item.role}
+                      </Text>
+                    </View>
+
+                    <View className="rounded-full bg-light-muted px-3 py-2 dark:bg-dark-muted">
+                      <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-brand-primary">
+                        Pending
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="mt-5 flex-row justify-between">
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      className="w-[48.5%] rounded-[10px] bg-brand-primary px-4 py-4"
+                      onPress={() => handleAccept(item._id)}
+                    >
+                      <Text className="text-center text-[15px] font-semibold text-white">
+                        Accept
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      className="w-[48.5%] rounded-[10px] border border-light-border bg-light-bg px-4 py-4 dark:border-dark-border dark:bg-dark-bg"
+                      onPress={() => handleDecline(item._id)}
+                    >
+                      <Text className="text-center text-[15px] font-semibold text-light-text dark:text-dark-text">
+                        Decline
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            />
           )}
-        />
-      )}
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 };
 
 export default InvitesScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  loaderWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#64748b',
-    fontSize: 16,
-  },
-  listContent: {
-    paddingBottom: 24,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-  circleName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  meta: {
-    marginTop: 6,
-    fontSize: 14,
-    color: '#475569',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    marginTop: 16,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  acceptButton: {
-    backgroundColor: '#2563eb',
-    marginRight: 8,
-  },
-  declineButton: {
-    backgroundColor: '#ef4444',
-    marginLeft: 8,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-  },
-});

@@ -1,17 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
-  StyleSheet,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { CompositeScreenProps } from '@react-navigation/native';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import {
+  BottomTabScreenProps,
+  useBottomTabBarHeight,
+} from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemeContext } from '../context/ThemeContext';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { AppStackParamList, AppTabParamList } from '../navigation/types';
 import { fetchCirclesThunk } from '../store/slices/circlesSlice';
@@ -25,11 +30,17 @@ type Props = CompositeScreenProps<
 
 const LiveShareSetupScreen = ({ route, navigation }: Props) => {
   const dispatch = useAppDispatch();
+  const { isDark } = useThemeContext();
+  const tabBarHeight = useBottomTabBarHeight();
   const { items } = useAppSelector((state) => state.circles);
   const { submitting } = useAppSelector((state) => state.sessions);
-  const defaultMinutes = useAppSelector((state) => state.privacy.defaultShareMinutes);
+  const defaultMinutes = useAppSelector(
+    (state) => state.privacy.defaultShareMinutes,
+  );
   const [title, setTitle] = useState('Safe commute');
-  const [selectedCircleId, setSelectedCircleId] = useState<string | undefined>(route.params?.preselectedCircleId);
+  const [selectedCircleId, setSelectedCircleId] = useState<string | undefined>(
+    route.params?.preselectedCircleId,
+  );
   const [durationMinutes, setDurationMinutes] = useState<number>(defaultMinutes);
 
   useEffect(() => {
@@ -64,118 +75,197 @@ const LiveShareSetupScreen = ({ route, navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Create a visible, revocable live session</Text>
-          <Text style={styles.helperText}>Choose a circle, set a duration, and start sharing only for this moment.</Text>
+    <View className="flex-1 bg-light-bg dark:bg-dark-bg">
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Session title"
-            value={title}
-            onChangeText={setTitle}
-            placeholderTextColor="#94a3b8"
-          />
+      <SafeAreaView
+        edges={['left', 'right']}
+        className="flex-1 bg-light-bg dark:bg-dark-bg"
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: tabBarHeight + 28 }}
+        >
+          <View className="px-5 pb-5 pt-4">
+            <View className="rounded-[14px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <View className="mb-4 flex-row items-start justify-between">
+                <View className="max-w-[76%]">
+                  <Text className="text-[12px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                    Live share setup
+                  </Text>
+                  <Text className="mt-2 text-[24px] font-semibold leading-[29px] text-light-text dark:text-dark-text">
+                    Start a live session
+                  </Text>
+                  <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                    Set a title, viewers, and duration.
+                  </Text>
+                </View>
 
-          <Text style={styles.sectionLabel}>Choose a circle</Text>
-          {items.length ? (
-            items.map((circle) => {
-              const selected = circle._id === selectedCircleId;
-              return (
+                <View className="h-12 w-12 items-center justify-center rounded-[8px] bg-brand-primary">
+                  <Ionicons name="navigate" size={22} color="#FFFFFF" />
+                </View>
+              </View>
+
+              <View className="rounded-[10px] bg-light-bg px-4 py-4 dark:bg-dark-bg">
+                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                  Sharing summary
+                </Text>
+                <Text className="mt-2 text-[18px] font-semibold text-light-text dark:text-dark-text">
+                  {selectedCircle ? `Sharing with ${selectedCircle.name}` : 'Private self-session'}
+                </Text>
+                <Text className="mt-1 text-[13px] leading-5 text-light-subtext dark:text-dark-subtext">
+                  Default duration: {durationMinutes} minutes
+                </Text>
+              </View>
+            </View>
+
+            <View className="mt-5 rounded-[12px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
+                Session details
+              </Text>
+              <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                Give this share a clear title.
+              </Text>
+
+              <TextInput
+                className="mt-4 rounded-[10px] border border-light-border bg-light-bg px-4 py-4 text-[15px] text-light-text dark:border-dark-border dark:bg-dark-bg dark:text-dark-text"
+                placeholder="Session title"
+                value={title}
+                onChangeText={setTitle}
+                placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+              />
+            </View>
+
+            <View className="mt-5 rounded-[12px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
+                Choose viewers
+              </Text>
+              <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                Pick a circle or keep it private.
+              </Text>
+
+              {items.length ? (
+                items.map((circle) => {
+                  const selected = circle._id === selectedCircleId;
+
+                  return (
+                    <TouchableOpacity
+                      key={circle._id}
+                      activeOpacity={0.9}
+                      onPress={() => setSelectedCircleId(selected ? undefined : circle._id)}
+                      className={`mt-4 rounded-[10px] border px-4 py-4 ${
+                        selected
+                          ? 'border-brand-primary bg-light-muted dark:bg-dark-muted'
+                          : 'border-light-border bg-light-card dark:border-dark-border dark:bg-dark-card'
+                      }`}
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <View className="max-w-[72%]">
+                          <Text
+                            className={`text-[15px] font-semibold ${
+                              selected
+                                ? 'text-brand-primary'
+                                : 'text-light-text dark:text-dark-text'
+                            }`}
+                          >
+                            {circle.name}
+                          </Text>
+                          <Text className="mt-1 text-[13px] text-light-subtext dark:text-dark-subtext">
+                            {circle.memberCount} members • {circle.type}
+                          </Text>
+                        </View>
+
+                        <View
+                          className={`h-10 w-10 items-center justify-center rounded-[8px] ${
+                            selected ? 'bg-brand-primary' : 'bg-light-bg dark:bg-dark-bg'
+                          }`}
+                        >
+                          <Ionicons
+                            name={selected ? 'checkmark' : 'add'}
+                            size={18}
+                            color={selected ? '#FFFFFF' : isDark ? '#94A3B8' : '#475569'}
+                          />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              ) : (
                 <TouchableOpacity
-                  key={circle._id}
-                  style={[styles.circleRow, selected && styles.circleRowSelected]}
-                  onPress={() => setSelectedCircleId(selected ? undefined : circle._id)}
+                  activeOpacity={0.88}
+                  onPress={() => navigation.navigate('Circles')}
+                  className="mt-4 rounded-[10px] bg-light-muted px-4 py-4 dark:bg-dark-muted"
                 >
-                  <View>
-                    <Text style={[styles.circleName, selected && styles.circleNameSelected]}>{circle.name}</Text>
-                    <Text style={styles.circleMeta}>{circle.memberCount} members • {circle.type}</Text>
-                  </View>
-                  <Text style={[styles.selectText, selected && styles.selectTextSelected]}>{selected ? 'Selected' : 'Select'}</Text>
+                  <Text className="text-[15px] font-semibold text-brand-primary">
+                    No circles yet. Create one first.
+                  </Text>
                 </TouchableOpacity>
-              );
-            })
-          ) : (
-            <TouchableOpacity onPress={() => navigation.navigate('Circles')}>
-              <Text style={styles.linkText}>No circles yet. Create one first.</Text>
-            </TouchableOpacity>
-          )}
+              )}
+            </View>
 
-          <Text style={styles.sectionLabel}>Duration</Text>
-          <View style={styles.durationWrap}>
-            {SESSION_DURATIONS.map((option) => {
-              const selected = option.minutes === durationMinutes;
-              return (
-                <TouchableOpacity
-                  key={option.label}
-                  style={[styles.durationChip, selected && styles.durationChipSelected]}
-                  onPress={() => setDurationMinutes(option.minutes)}
-                >
-                  <Text style={[styles.durationText, selected && styles.durationTextSelected]}>{option.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
+            <View className="mt-5 rounded-[12px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
+                Duration
+              </Text>
+              <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                Choose how long the share stays live.
+              </Text>
+
+              <View className="mt-4 flex-row flex-wrap">
+                {SESSION_DURATIONS.map((option, index) => {
+                  const selected = option.minutes === durationMinutes;
+
+                  return (
+                    <TouchableOpacity
+                      key={option.label}
+                      activeOpacity={0.88}
+                      onPress={() => setDurationMinutes(option.minutes)}
+                      className={`mb-3 mr-3 rounded-full border px-4 py-3 ${
+                        selected
+                          ? 'border-brand-primary bg-light-muted dark:bg-dark-muted'
+                          : 'border-light-border bg-light-bg dark:border-dark-border dark:bg-dark-bg'
+                      } ${index === SESSION_DURATIONS.length - 1 ? 'mr-0' : ''}`}
+                    >
+                      <Text
+                        className={`text-[13px] font-semibold ${
+                          selected
+                            ? 'text-brand-primary'
+                            : 'text-light-subtext dark:text-dark-subtext'
+                        }`}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                {selectedCircle
+                  ? `Sharing with ${selectedCircle.name}.`
+                  : 'This session is private.'}
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.92}
+                className="mt-5 rounded-[10px] bg-brand-primary px-4 py-4"
+                disabled={submitting}
+                onPress={handleStart}
+              >
+                <Text className="text-center text-[15px] font-semibold text-white">
+                  {submitting ? 'Starting live session...' : 'Start live session'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {selectedCircle ? <Text style={styles.summary}>Sharing with {selectedCircle.name}</Text> : <Text style={styles.summary}>Private self-session until you attach a circle later.</Text>}
-
-          <TouchableOpacity style={styles.primaryButton} disabled={submitting} onPress={handleStart}>
-            <Text style={styles.primaryButtonText}>{submitting ? 'Starting...' : 'Start Live Session'}</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 export default LiveShareSetupScreen;
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { padding: 16 },
-  card: { backgroundColor: '#ffffff', borderRadius: 22, padding: 18 },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827' },
-  helperText: { marginTop: 8, color: '#64748b', lineHeight: 20 },
-  input: {
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    color: '#111827',
-  },
-  sectionLabel: { marginTop: 18, fontWeight: '700', color: '#0f172a' },
-  circleRow: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 16,
-    padding: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  circleRowSelected: { borderColor: '#2563eb', backgroundColor: '#eff6ff' },
-  circleName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  circleNameSelected: { color: '#1d4ed8' },
-  circleMeta: { marginTop: 4, fontSize: 13, color: '#64748b' },
-  selectText: { fontWeight: '700', color: '#475569' },
-  selectTextSelected: { color: '#1d4ed8' },
-  durationWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
-  durationChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: '#e2e8f0' },
-  durationChipSelected: { backgroundColor: '#dbeafe' },
-  durationText: { color: '#334155', fontWeight: '700' },
-  durationTextSelected: { color: '#1d4ed8' },
-  summary: { marginTop: 16, color: '#475569', lineHeight: 20 },
-  linkText: { marginTop: 12, color: '#2563eb', fontWeight: '700' },
-  primaryButton: {
-    marginTop: 18,
-    backgroundColor: '#2563eb',
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  primaryButtonText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
-});

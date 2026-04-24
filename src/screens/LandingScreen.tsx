@@ -57,7 +57,7 @@ const LandingScreen = ({ navigation }: Props) => {
                     onPress={toggleTheme}
                     className="rounded-full border border-light-badgeBorder bg-light-badge px-4 py-2 dark:border-dark-badgeBorder dark:bg-dark-badge"
                   >
-                    <Text className="text-[12px] font-bold text-light-heroText dark:text-dark-heroText">
+                    <Text className="text-[12px] font-semibold text-light-heroText dark:text-dark-heroText">
                       {isDark ? 'Light' : 'Dark'}
                     </Text>
                   </TouchableOpacity>
@@ -117,7 +117,7 @@ const LandingScreen = ({ navigation }: Props) => {
               className="mt-3 h-14 items-center justify-center rounded-2xl border border-light-border bg-light-surface dark:border-dark-border dark:bg-dark-surface"
               onPress={() => navigation.navigate('Auth', { mode: 'login' })}
             >
-              <Text className="text-[15px] font-bold text-light-text dark:text-dark-text">
+              <Text className="text-[15px] font-semibold text-light-text dark:text-dark-text">
                 I already have an account
               </Text>
             </TouchableOpacity>

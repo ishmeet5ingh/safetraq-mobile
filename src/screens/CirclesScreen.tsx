@@ -1,21 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
-  StyleSheet,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { CompositeScreenProps } from '@react-navigation/native';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import {
+  BottomTabScreenProps,
+  useBottomTabBarHeight,
+} from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
+import { useThemeContext } from '../context/ThemeContext';
 import { AppStackParamList, AppTabParamList } from '../navigation/types';
 import { CircleType } from '../types/circle';
-import { createCircleThunk, fetchCirclesThunk } from '../store/slices/circlesSlice';
+import {
+  createCircleThunk,
+  fetchCirclesThunk,
+} from '../store/slices/circlesSlice';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<AppTabParamList, 'Circles'>,
@@ -24,9 +32,43 @@ type Props = CompositeScreenProps<
 
 const circleTypes: CircleType[] = ['family', 'partner', 'friends', 'team'];
 
+const getCircleTypeClasses = (type: CircleType) => {
+  switch (type) {
+    case 'family':
+      return 'bg-brand-primary';
+    case 'partner':
+      return 'bg-brand-secondary';
+    case 'friends':
+      return 'bg-brand-accent';
+    case 'team':
+      return 'bg-brand-warning';
+    default:
+      return 'bg-brand-primary';
+  }
+};
+
+const getCircleTypeLabel = (type: CircleType) => {
+  switch (type) {
+    case 'family':
+      return 'Family';
+    case 'partner':
+      return 'Partner';
+    case 'friends':
+      return 'Friends';
+    case 'team':
+      return 'Team';
+    default:
+      return 'Circle';
+  }
+};
+
 const CirclesScreen = ({ navigation }: Props) => {
   const dispatch = useAppDispatch();
-  const { items, loading, submitting, error } = useAppSelector((state) => state.circles);
+  const { isDark } = useThemeContext();
+  const tabBarHeight = useBottomTabBarHeight();
+  const { items, loading, submitting, error } = useAppSelector(
+    (state) => state.circles,
+  );
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<CircleType>('family');
@@ -40,6 +82,10 @@ const CirclesScreen = ({ navigation }: Props) => {
       Alert.alert('Circles', error);
     }
   }, [error]);
+
+  const totalMembers = useMemo(() => {
+    return items.reduce((count, circle) => count + circle.memberCount, 0);
+  }, [items]);
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -63,126 +109,216 @@ const CirclesScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.createCard}>
-          <Text style={styles.sectionTitle}>Create a trusted circle</Text>
-          <Text style={styles.helperText}>Make one small private group for family, partner, friends, or your team.</Text>
+    <View className="flex-1 bg-light-bg dark:bg-dark-bg">
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Circle name"
-            value={name}
-            onChangeText={setName}
-            placeholderTextColor="#94a3b8"
-          />
-
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Description (optional)"
-            value={description}
-            onChangeText={setDescription}
-            placeholderTextColor="#94a3b8"
-            multiline
-          />
-
-          <View style={styles.typeRow}>
-            {circleTypes.map((item) => {
-              const selected = item === type;
-              return (
-                <TouchableOpacity
-                  key={item}
-                  style={[styles.typeChip, selected && styles.typeChipSelected]}
-                  onPress={() => setType(item)}
-                >
-                  <Text style={[styles.typeChipText, selected && styles.typeChipTextSelected]}>{item}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <TouchableOpacity style={styles.primaryButton} disabled={submitting} onPress={handleCreate}>
-            <Text style={styles.primaryButtonText}>{submitting ? 'Creating...' : 'Create Circle'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.listCard}>
-          <Text style={styles.sectionTitle}>Your circles</Text>
-          <Text style={styles.helperText}>{loading ? 'Refreshing circles...' : 'Tap a circle to view members and share live.'}</Text>
-
-          {items.length ? (
-            items.map((circle) => (
-              <TouchableOpacity
-                key={circle._id}
-                style={styles.circleRow}
-                onPress={() => navigation.navigate('CircleDetail', { circleId: circle._id })}
-              >
-                <View>
-                  <Text style={styles.circleName}>{circle.name}</Text>
-                  <Text style={styles.circleMeta}>{circle.memberCount} members • {circle.type}</Text>
+      <SafeAreaView
+        edges={['left', 'right']}
+        className="flex-1 bg-light-bg dark:bg-dark-bg"
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: tabBarHeight + 28 }}
+        >
+          <View className="px-5 pb-5 pt-4">
+            <View className="rounded-[14px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <View className="mb-4 flex-row items-start justify-between">
+                <View className="max-w-[74%]">
+                  <Text className="text-[12px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                    Trusted circles
+                  </Text>
+                  <Text className="mt-2 text-[24px] font-semibold leading-[29px] text-light-text dark:text-dark-text">
+                    Keep the right people close
+                  </Text>
+                  <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                    Build private groups for each share.
+                  </Text>
                 </View>
-                <Text style={styles.rowAction}>Open</Text>
+
+                <View className="h-12 w-12 items-center justify-center rounded-[8px] bg-brand-primary">
+                  <Ionicons name="people" size={22} color="#FFFFFF" />
+                </View>
+              </View>
+
+              <View className="flex-row justify-between">
+                <View className="w-[48.5%] rounded-[10px] bg-light-bg px-4 py-4 dark:bg-dark-bg">
+                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                    Circles
+                  </Text>
+                  <Text className="mt-2 text-[20px] font-semibold text-light-text dark:text-dark-text">
+                    {items.length}
+                  </Text>
+                </View>
+
+                <View className="w-[48.5%] rounded-[10px] bg-light-bg px-4 py-4 dark:bg-dark-bg">
+                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                    Members
+                  </Text>
+                  <Text className="mt-2 text-[20px] font-semibold text-light-text dark:text-dark-text">
+                    {totalMembers}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View className="mt-5 rounded-[12px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
+                Create a circle
+              </Text>
+              <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                Create one small, focused group.
+              </Text>
+
+              <TextInput
+                className="mt-4 rounded-[10px] border border-light-border bg-light-bg px-4 py-4 text-[15px] text-light-text dark:border-dark-border dark:bg-dark-bg dark:text-dark-text"
+                placeholder="Circle name"
+                value={name}
+                onChangeText={setName}
+                placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+              />
+
+              <TextInput
+                className="mt-3 min-h-[100px] rounded-[10px] border border-light-border bg-light-bg px-4 py-4 text-[15px] text-light-text dark:border-dark-border dark:bg-dark-bg dark:text-dark-text"
+                placeholder="Description (optional)"
+                value={description}
+                onChangeText={setDescription}
+                placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                multiline
+                textAlignVertical="top"
+              />
+
+              <Text className="mt-5 text-[13px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                Circle type
+              </Text>
+              <View className="mt-3 flex-row flex-wrap">
+                {circleTypes.map((item, index) => {
+                  const selected = item === type;
+
+                  return (
+                    <TouchableOpacity
+                      key={item}
+                      activeOpacity={0.88}
+                      onPress={() => setType(item)}
+                      className={`mb-3 mr-3 rounded-full border px-4 py-3 ${
+                        selected
+                          ? 'border-brand-primary bg-light-muted dark:bg-dark-muted'
+                          : 'border-light-border bg-light-bg dark:border-dark-border dark:bg-dark-bg'
+                      } ${index === circleTypes.length - 1 ? 'mr-0' : ''}`}
+                    >
+                      <Text
+                        className={`text-[13px] font-semibold ${
+                          selected
+                            ? 'text-brand-primary'
+                            : 'text-light-subtext dark:text-dark-subtext'
+                        }`}
+                      >
+                        {getCircleTypeLabel(item)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.92}
+                className="mt-2 rounded-[10px] bg-brand-primary px-4 py-4"
+                disabled={submitting}
+                onPress={handleCreate}
+              >
+                <Text className="text-center text-[15px] font-semibold text-white">
+                  {submitting ? 'Creating circle...' : 'Create trusted circle'}
+                </Text>
               </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No circles yet. Create your first circle above.</Text>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            </View>
+
+            <View className="mt-5 rounded-[12px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <View className="flex-row items-start justify-between">
+                <View className="max-w-[76%]">
+                  <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
+                    Your groups
+                  </Text>
+                  <Text className="mt-1 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                    {loading
+                      ? 'Refreshing circles.'
+                      : 'Open a circle to manage members and shares.'}
+                  </Text>
+                </View>
+
+                <View className="rounded-full bg-light-muted px-3 py-2 dark:bg-dark-muted">
+                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                    {items.length} total
+                  </Text>
+                </View>
+              </View>
+
+              {items.length ? (
+                items.map((circle, index) => (
+                  <TouchableOpacity
+                    key={circle._id}
+                    activeOpacity={0.9}
+                    onPress={() =>
+                      navigation.navigate('CircleDetail', {
+                        circleId: circle._id,
+                      })
+                    }
+                    className={`mt-4 rounded-[10px] border border-light-border px-4 py-4 dark:border-dark-border ${
+                      index === items.length - 1 ? '' : ''
+                    }`}
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center">
+                        <View
+                          className={`mr-3 h-12 w-12 items-center justify-center rounded-[8px] ${getCircleTypeClasses(circle.type)}`}
+                        >
+                          <Text className="text-[14px] font-semibold text-white">
+                            {circle.name.slice(0, 1).toUpperCase()}
+                          </Text>
+                        </View>
+
+                        <View className="max-w-[72%]">
+                          <Text className="text-[15px] font-semibold text-light-text dark:text-dark-text">
+                            {circle.name}
+                          </Text>
+                          <Text className="mt-1 text-[13px] text-light-subtext dark:text-dark-subtext">
+                            {circle.memberCount} members
+                            {circle.description ? ` • ${circle.description}` : ''}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View className="items-end">
+                        <Text className="text-[12px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                          {getCircleTypeLabel(circle.type)}
+                        </Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={18}
+                          color={isDark ? '#94A3B8' : '#475569'}
+                        />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View className="mt-4 rounded-[10px] bg-light-muted px-4 py-4 dark:bg-dark-muted">
+                  <Text className="text-[15px] font-semibold text-light-text dark:text-dark-text">
+                    No circles yet
+                  </Text>
+                  <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
+                    Create your first circle above.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 export default CirclesScreen;
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { padding: 16, paddingBottom: 28 },
-  createCard: { backgroundColor: '#ffffff', borderRadius: 22, padding: 18 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  helperText: { marginTop: 6, color: '#64748b', lineHeight: 20 },
-  input: {
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    color: '#111827',
-    backgroundColor: '#fff',
-  },
-  textArea: { minHeight: 90, textAlignVertical: 'top' },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 },
-  typeChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#e2e8f0',
-  },
-  typeChipSelected: { backgroundColor: '#dbeafe' },
-  typeChipText: { color: '#334155', fontWeight: '700', textTransform: 'capitalize' },
-  typeChipTextSelected: { color: '#1d4ed8' },
-  primaryButton: {
-    marginTop: 16,
-    borderRadius: 14,
-    backgroundColor: '#2563eb',
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  listCard: { marginTop: 16, backgroundColor: '#ffffff', borderRadius: 22, padding: 18 },
-  circleRow: {
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 16,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  circleName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  circleMeta: { marginTop: 4, fontSize: 13, color: '#64748b' },
-  rowAction: { color: '#2563eb', fontWeight: '700' },
-  emptyText: { marginTop: 14, color: '#64748b', lineHeight: 20 },
-});

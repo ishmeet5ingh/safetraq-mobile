@@ -9,7 +9,10 @@ import {
 } from 'react-native';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import {
+  BottomTabScreenProps,
+  useBottomTabBarHeight,
+} from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
@@ -43,17 +46,17 @@ type QuickActionProps = {
 
 const StatCard = ({ label, value, icon, iconBgClassName }: StatCardProps) => {
   return (
-    <View className="w-[31.5%] rounded-[18px] border border-light-border bg-light-card px-3 py-4 dark:border-dark-border dark:bg-dark-card">
+    <View className="w-[31.5%] rounded-[10px] border border-light-border bg-light-card px-3 py-4 dark:border-dark-border dark:bg-dark-card">
       <View
-        className={`mb-4 h-10 w-10 items-center justify-center rounded-[14px] ${iconBgClassName}`}
+        className={`mb-4 h-10 w-10 items-center justify-center rounded-[8px] ${iconBgClassName}`}
       >
         <Ionicons name={icon} size={18} color="#FFFFFF" />
       </View>
 
-      <Text className="text-[11px] font-bold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+      <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
         {label}
       </Text>
-      <Text className="mt-2 text-[22px] font-extrabold text-light-text dark:text-dark-text">
+      <Text className="mt-2 text-[20px] font-semibold text-light-text dark:text-dark-text">
         {value}
       </Text>
     </View>
@@ -71,15 +74,15 @@ const QuickActionCard = ({
     <TouchableOpacity
       activeOpacity={0.9}
       onPress={onPress}
-      className="mb-3 w-[48.3%] rounded-[18px] border border-light-border bg-light-card px-4 py-4 shadow-soft dark:border-dark-border dark:bg-dark-card"
+      className="mb-3 w-[48.3%] rounded-[10px] border border-light-border bg-light-card px-4 py-4 shadow-soft dark:border-dark-border dark:bg-dark-card"
     >
       <View
-        className={`mb-5 h-11 w-11 items-center justify-center rounded-[14px] ${iconBgClassName}`}
+        className={`mb-5 h-11 w-11 items-center justify-center rounded-[8px] ${iconBgClassName}`}
       >
         <Ionicons name={icon} size={20} color="#FFFFFF" />
       </View>
 
-      <Text className="text-[16px] font-extrabold text-light-text dark:text-dark-text">
+      <Text className="text-[15px] font-semibold text-light-text dark:text-dark-text">
         {title}
       </Text>
       <Text className="mt-2 text-[13px] leading-5 text-light-subtext dark:text-dark-subtext">
@@ -117,7 +120,8 @@ const formatSessionTime = (expiresAt?: string) => {
 
 const HomeScreen = ({ navigation }: Props) => {
   const dispatch = useAppDispatch();
-  const { isDark } = useThemeContext();
+  const { isDark, activeTheme, setThemeMode } = useThemeContext();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const { user } = useAppSelector((state) => state.auth);
   const { items: circles } = useAppSelector((state) => state.circles);
@@ -158,46 +162,85 @@ const HomeScreen = ({ navigation }: Props) => {
       />
 
       <SafeAreaView
-        edges={['left', 'right', 'bottom']}
+        edges={['left', 'right']}
         className="flex-1 bg-light-bg dark:bg-dark-bg"
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 34 }}
+          contentContainerStyle={{ paddingBottom: tabBarHeight + 28 }}
         >
           <View className="px-5 pb-4 pt-4">
             <View className="mb-6 flex-row items-center justify-between">
               <View className="max-w-[74%]">
-                <Text className="text-[13px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                <Text className="text-[13px] font-medium uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
                   Safety Control Center
                 </Text>
-                <Text className="mt-2 text-[32px] font-extrabold leading-[36px] text-light-text dark:text-dark-text">
+                <Text className="mt-2 text-[28px] font-semibold leading-[32px] text-light-text dark:text-dark-text">
                   Good evening, {firstName}
                 </Text>
                 <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
-                  Everything important for live sharing, trusted circles, and safer
-                  movement is organized here.
+                  Live share, circles, and privacy in one place.
                 </Text>
               </View>
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => Alert.alert('Profile', JSON.stringify(user, null, 2))}
-                className="h-14 w-14 items-center justify-center rounded-[16px] border border-light-border bg-light-card shadow-soft dark:border-dark-border dark:bg-dark-card"
-              >
-                <Text className="text-[16px] font-extrabold text-brand-primary">
-                  {initials}
-                </Text>
-              </TouchableOpacity>
+              <View className="items-end">
+                <View className="mb-3 flex-row rounded-[10px] border border-light-border bg-light-card p-1 shadow-soft dark:border-dark-border dark:bg-dark-card">
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => {
+                      void setThemeMode('light');
+                    }}
+                    className={`h-10 w-10 items-center justify-center rounded-[8px] ${
+                      activeTheme === 'light'
+                        ? 'bg-brand-primary'
+                        : 'bg-transparent'
+                    }`}
+                  >
+                    <Ionicons
+                      name="sunny"
+                      size={18}
+                      color={activeTheme === 'light' ? '#FFFFFF' : isDark ? '#94A3B8' : '#475569'}
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => {
+                      void setThemeMode('dark');
+                    }}
+                    className={`ml-1 h-10 w-10 items-center justify-center rounded-[8px] ${
+                      activeTheme === 'dark'
+                        ? 'bg-brand-primary'
+                        : 'bg-transparent'
+                    }`}
+                  >
+                    <Ionicons
+                      name="moon"
+                      size={18}
+                      color={activeTheme === 'dark' ? '#FFFFFF' : isDark ? '#94A3B8' : '#475569'}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => Alert.alert('Profile', JSON.stringify(user, null, 2))}
+                  className="h-14 w-14 items-center justify-center rounded-[10px] border border-light-border bg-light-card shadow-soft dark:border-dark-border dark:bg-dark-card"
+                >
+                  <Text className="text-[15px] font-semibold text-brand-primary">
+                    {initials}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View className="overflow-hidden rounded-[22px] border border-light-border bg-light-card px-5 pb-5 pt-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+            <View className="overflow-hidden rounded-[14px] border border-light-border bg-light-card px-5 pb-5 pt-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
               <View className="absolute -right-12 -top-10 h-32 w-32 rounded-full bg-light-muted dark:bg-dark-muted" />
               <View className="absolute right-12 top-16 h-20 w-20 rounded-full bg-light-muted dark:bg-dark-muted" />
 
               <View className="mb-4 flex-row items-start justify-between">
                 <View className="rounded-full bg-light-muted px-3 py-2 dark:bg-dark-muted">
-                  <Text className="text-[11px] font-extrabold uppercase tracking-[1px] text-brand-primary">
+                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-brand-primary">
                     Daily overview
                   </Text>
                 </View>
@@ -208,7 +251,7 @@ const HomeScreen = ({ navigation }: Props) => {
                   }`}
                 >
                   <Text
-                    className={`text-[12px] font-bold ${
+                    className={`text-[12px] font-semibold ${
                       activeSession ? 'text-brand-live' : 'text-light-subtext dark:text-dark-subtext'
                     }`}
                   >
@@ -217,17 +260,16 @@ const HomeScreen = ({ navigation }: Props) => {
                 </View>
               </View>
 
-              <Text className="max-w-[84%] text-[30px] font-extrabold leading-[35px] text-light-text dark:text-dark-text">
-                Calm, visible safety for every trip and everyday routine.
+              <Text className="max-w-[84%] text-[24px] font-semibold leading-[29px] text-light-text dark:text-dark-text">
+                Clear safety for every trip.
               </Text>
 
               <Text className="mt-3 max-w-[92%] text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
-                Review live-sharing status, trusted-circle activity, and privacy
-                controls in one place so you can act quickly when it matters.
+                Check status, circles, and privacy fast.
               </Text>
 
-              <View className="mt-5 flex-row items-center rounded-[18px] border border-light-border bg-light-bg px-4 py-4 dark:border-dark-border dark:bg-dark-bg">
-                <View className="mr-4 h-12 w-12 items-center justify-center rounded-[14px] bg-brand-primary">
+              <View className="mt-5 flex-row items-center rounded-[10px] border border-light-border bg-light-bg px-4 py-4 dark:border-dark-border dark:bg-dark-bg">
+                <View className="mr-4 h-12 w-12 items-center justify-center rounded-[8px] bg-brand-primary">
                   <Ionicons
                     name={activeSession ? 'radio' : 'shield-checkmark'}
                     size={22}
@@ -236,16 +278,16 @@ const HomeScreen = ({ navigation }: Props) => {
                 </View>
 
                 <View className="flex-1">
-                  <Text className="text-[12px] font-bold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                  <Text className="text-[12px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
                     Current state
                   </Text>
-                  <Text className="mt-1 text-[18px] font-extrabold text-light-text dark:text-dark-text">
+                  <Text className="mt-1 text-[16px] font-semibold text-light-text dark:text-dark-text">
                     {activeSession ? activeSession.title : 'No active share right now'}
                   </Text>
                   <Text className="mt-1 text-[13px] leading-5 text-light-subtext dark:text-dark-subtext">
                     {activeSession
                       ? `Ends at ${formatSessionTime(activeSession.expiresAt)}`
-                      : 'Start a protected share when you begin your next trip.'}
+                      : 'Start a share when you need it.'}
                   </Text>
                 </View>
               </View>
@@ -260,28 +302,28 @@ const HomeScreen = ({ navigation }: Props) => {
                         })
                       : navigation.navigate('LiveShareSetup')
                   }
-                  className="w-[48.5%] rounded-[16px] bg-brand-primary px-4 py-4"
+                  className="w-[48.5%] rounded-[10px] bg-brand-primary px-4 py-4"
                 >
-                  <Text className="text-[15px] font-extrabold text-white">
+                  <Text className="text-[15px] font-semibold text-white">
                     {activeSession ? 'Open live session' : 'Start live share'}
                   </Text>
                   <Text className="mt-1 text-[12px] leading-5 text-white/80">
                     {activeSession
-                      ? 'View map, controls, and viewers'
-                      : 'Launch a protected location session'}
+                      ? 'Open map and controls'
+                      : 'Start a new session'}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   activeOpacity={0.9}
                   onPress={() => navigation.navigate('SOS')}
-                  className="w-[48.5%] rounded-[16px] border border-light-border bg-light-bg px-4 py-4 dark:border-dark-border dark:bg-dark-bg"
+                  className="w-[48.5%] rounded-[10px] border border-light-border bg-light-bg px-4 py-4 dark:border-dark-border dark:bg-dark-bg"
                 >
-                  <Text className="text-[15px] font-extrabold text-light-text dark:text-dark-text">
+                  <Text className="text-[15px] font-semibold text-light-text dark:text-dark-text">
                     Emergency SOS
                   </Text>
                   <Text className="mt-1 text-[12px] leading-5 text-light-subtext dark:text-dark-subtext">
-                    Send an alert with your latest location
+                    Send an alert fast
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -312,23 +354,22 @@ const HomeScreen = ({ navigation }: Props) => {
               <TouchableOpacity
                 activeOpacity={0.88}
                 onPress={() => navigation.navigate('Invites')}
-                className="mt-5 rounded-[20px] border border-amber-200 bg-amber-50 px-5 py-5 shadow-soft dark:border-amber-500/20 dark:bg-dark-card"
+                className="mt-5 rounded-[12px] border border-amber-200 bg-amber-50 px-5 py-5 shadow-soft dark:border-amber-500/20 dark:bg-dark-card"
               >
                 <View className="flex-row items-start justify-between">
                   <View className="max-w-[82%]">
-                    <Text className="text-[12px] font-extrabold uppercase tracking-[1px] text-amber-700 dark:text-amber-300">
+                    <Text className="text-[12px] font-semibold uppercase tracking-[1px] text-amber-700 dark:text-amber-300">
                       Invite queue
                     </Text>
-                    <Text className="mt-2 text-[20px] font-extrabold text-amber-950 dark:text-dark-text">
-                      {invites.length} trusted circle request{invites.length > 1 ? 's' : ''} waiting
+                    <Text className="mt-2 text-[18px] font-semibold text-amber-950 dark:text-dark-text">
+                      {invites.length} request{invites.length > 1 ? 's' : ''} waiting
                     </Text>
                     <Text className="mt-2 text-[14px] leading-6 text-amber-800 dark:text-dark-subtext">
-                      Review new people before they become part of your safety
-                      network.
+                      Review before they join.
                     </Text>
                   </View>
 
-                  <View className="h-12 w-12 items-center justify-center rounded-[14px] bg-brand-warning">
+                  <View className="h-12 w-12 items-center justify-center rounded-[8px] bg-brand-warning">
                     <Ionicons name="mail-open-outline" size={22} color="#FFFFFF" />
                   </View>
                 </View>
@@ -337,11 +378,11 @@ const HomeScreen = ({ navigation }: Props) => {
 
             <View className="mt-6 flex-row items-center justify-between">
               <View>
-                <Text className="text-[22px] font-extrabold text-light-text dark:text-dark-text">
+                <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
                   Quick actions
                 </Text>
                 <Text className="mt-1 text-[14px] text-light-subtext dark:text-dark-subtext">
-                  The most-used controls, shaped for one-handed access.
+                  Your main actions.
                 </Text>
               </View>
             </View>
@@ -349,42 +390,42 @@ const HomeScreen = ({ navigation }: Props) => {
             <View className="mt-4 flex-row flex-wrap justify-between">
               <QuickActionCard
                 title="Live Share"
-                subtitle="Start or configure a protected trip."
+                subtitle="Start or manage a session."
                 icon="navigate"
                 iconBgClassName="bg-brand-primary"
                 onPress={() => navigation.navigate('LiveShareSetup')}
               />
               <QuickActionCard
                 title="Trusted Circles"
-                subtitle="Manage family, friends, and team groups."
+                subtitle="Manage your groups."
                 icon="people"
                 iconBgClassName="bg-brand-secondary"
                 onPress={() => navigation.navigate('Circles')}
               />
               <QuickActionCard
                 title="Invites"
-                subtitle="Review pending requests and approvals."
+                subtitle="Review requests."
                 icon="mail"
                 iconBgClassName="bg-brand-accent"
                 onPress={() => navigation.navigate('Invites')}
               />
               <QuickActionCard
                 title="Privacy"
-                subtitle="Adjust consent, defaults, and visibility."
+                subtitle="Manage privacy settings."
                 icon="shield-checkmark"
                 iconBgClassName="bg-brand-live"
                 onPress={() => navigation.navigate('PrivacyDashboard')}
               />
             </View>
 
-            <View className="mt-2 rounded-[20px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+            <View className="mt-2 rounded-[12px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
               <View className="mb-4 flex-row items-center justify-between">
                 <View>
-                  <Text className="text-[22px] font-extrabold text-light-text dark:text-dark-text">
+                  <Text className="text-[18px] font-semibold text-light-text dark:text-dark-text">
                     Trusted circles
                   </Text>
                   <Text className="mt-1 text-[14px] text-light-subtext dark:text-dark-subtext">
-                    Your core people and private sharing groups.
+                    Your sharing groups.
                   </Text>
                 </View>
 
@@ -392,7 +433,7 @@ const HomeScreen = ({ navigation }: Props) => {
                   activeOpacity={0.85}
                   onPress={() => navigation.navigate('Circles')}
                 >
-                  <Text className="text-[14px] font-bold text-brand-primary">
+                  <Text className="text-[14px] font-semibold text-brand-primary">
                     See all
                   </Text>
                 </TouchableOpacity>
@@ -408,7 +449,7 @@ const HomeScreen = ({ navigation }: Props) => {
                         circleId: circle._id,
                       })
                     }
-                    className={`rounded-[18px] border border-light-border px-4 py-4 dark:border-dark-border ${
+                    className={`rounded-[10px] border border-light-border px-4 py-4 dark:border-dark-border ${
                       index < circles.slice(0, 3).length - 1
                         ? 'mb-3'
                         : ''
@@ -417,15 +458,15 @@ const HomeScreen = ({ navigation }: Props) => {
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center">
                         <View
-                          className={`mr-3 h-12 w-12 items-center justify-center rounded-[14px] ${getCircleTypeClassName(circle.type)}`}
+                          className={`mr-3 h-12 w-12 items-center justify-center rounded-[8px] ${getCircleTypeClassName(circle.type)}`}
                         >
-                          <Text className="text-[16px] font-extrabold text-white">
+                          <Text className="text-[14px] font-semibold text-white">
                             {circle.name.slice(0, 1).toUpperCase()}
                           </Text>
                         </View>
 
                         <View>
-                          <Text className="text-[16px] font-extrabold text-light-text dark:text-dark-text">
+                          <Text className="text-[15px] font-semibold text-light-text dark:text-dark-text">
                             {circle.name}
                           </Text>
                           <Text className="mt-1 text-[13px] text-light-subtext dark:text-dark-subtext">
@@ -436,7 +477,7 @@ const HomeScreen = ({ navigation }: Props) => {
 
                       <View className="flex-row items-center">
                         <View className="mr-3 rounded-full bg-light-muted px-3 py-2 dark:bg-dark-muted">
-                          <Text className="text-[11px] font-extrabold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+                          <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
                             {circle.type}
                           </Text>
                         </View>
@@ -450,23 +491,22 @@ const HomeScreen = ({ navigation }: Props) => {
                   </TouchableOpacity>
                 ))
               ) : (
-                <View className="rounded-[18px] bg-light-muted px-4 py-4 dark:bg-dark-muted">
-                  <Text className="text-[16px] font-bold text-light-text dark:text-dark-text">
+                <View className="rounded-[10px] bg-light-muted px-4 py-4 dark:bg-dark-muted">
+                  <Text className="text-[15px] font-semibold text-light-text dark:text-dark-text">
                     Build your first circle
                   </Text>
                   <Text className="mt-2 text-[14px] leading-6 text-light-subtext dark:text-dark-subtext">
-                    Create a family, partner, friends, or team circle so your live
-                    shares always reach the right people.
+                    Create a circle to share faster.
                   </Text>
                 </View>
               )}
             </View>
 
-            <View className="mt-5 rounded-[20px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
-              <Text className="text-[13px] font-bold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
+            <View className="mt-5 rounded-[12px] border border-light-border bg-light-card px-5 py-5 shadow-soft dark:border-dark-border dark:bg-dark-card">
+              <Text className="text-[13px] font-semibold uppercase tracking-[1px] text-light-subtext dark:text-dark-subtext">
                 Account
               </Text>
-              <Text className="mt-2 text-[22px] font-extrabold text-light-text dark:text-dark-text">
+              <Text className="mt-2 text-[18px] font-semibold text-light-text dark:text-dark-text">
                 {user?.name || 'SafeTraq member'}
               </Text>
               <Text className="mt-1 text-[14px] text-light-subtext dark:text-dark-subtext">
@@ -477,26 +517,26 @@ const HomeScreen = ({ navigation }: Props) => {
                 <TouchableOpacity
                   activeOpacity={0.9}
                   onPress={() => Alert.alert('Profile', JSON.stringify(user, null, 2))}
-                  className="w-[48.5%] rounded-[16px] border border-light-border bg-light-bg px-4 py-4 dark:border-dark-border dark:bg-dark-bg"
+                  className="w-[48.5%] rounded-[10px] border border-light-border bg-light-bg px-4 py-4 dark:border-dark-border dark:bg-dark-bg"
                 >
-                  <Text className="text-[14px] font-extrabold text-light-text dark:text-dark-text">
+                  <Text className="text-[14px] font-semibold text-light-text dark:text-dark-text">
                     View details
                   </Text>
                   <Text className="mt-1 text-[12px] leading-5 text-light-subtext dark:text-dark-subtext">
-                    Check your current profile snapshot
+                    View your profile
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   activeOpacity={0.9}
                   onPress={handleLogout}
-                  className="w-[48.5%] rounded-[16px] bg-brand-danger px-4 py-4"
+                  className="w-[48.5%] rounded-[10px] bg-brand-danger px-4 py-4"
                 >
-                  <Text className="text-[14px] font-extrabold text-white">
+                  <Text className="text-[14px] font-semibold text-white">
                     Logout
                   </Text>
                   <Text className="mt-1 text-[12px] leading-5 text-white/80">
-                    Sign out securely
+                    Sign out
                   </Text>
                 </TouchableOpacity>
               </View>

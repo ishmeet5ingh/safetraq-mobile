@@ -102,11 +102,45 @@ const leafletHtml = `
         const markers = payload.markers || [];
         const nextIds = new Set();
         const bounds = [];
+        const coordinateGroups = new Map();
+
+        markers.forEach((item) => {
+          const key =
+            Number(item.latitude).toFixed(6) + ',' + Number(item.longitude).toFixed(6);
+          const existing = coordinateGroups.get(key) || [];
+          existing.push(item.id);
+          coordinateGroups.set(key, existing);
+        });
+
+        function getDisplayLatLng(item) {
+          const key =
+            Number(item.latitude).toFixed(6) + ',' + Number(item.longitude).toFixed(6);
+          const group = coordinateGroups.get(key) || [];
+
+          if (group.length <= 1) {
+            return [item.latitude, item.longitude];
+          }
+
+          const index = group.indexOf(item.id);
+
+          if (index === -1) {
+            return [item.latitude, item.longitude];
+          }
+
+          // Spread identical coordinates in a small ring so emulator/mock
+          // locations do not visually collapse into one marker.
+          const angle = (Math.PI * 2 * index) / group.length;
+          const radius = 0.00018;
+          const latOffset = Math.sin(angle) * radius;
+          const lngOffset = Math.cos(angle) * radius;
+
+          return [item.latitude + latOffset, item.longitude + lngOffset];
+        }
 
         markers.forEach((item) => {
           nextIds.add(item.id);
 
-          const latLng = [item.latitude, item.longitude];
+          const latLng = getDisplayLatLng(item);
           bounds.push(latLng);
 
           if (markersMap.has(item.id)) {

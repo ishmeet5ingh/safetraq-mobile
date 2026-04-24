@@ -36,7 +36,7 @@ const AppNavigator = () => {
             },
             headerTintColor: isDark ? '#F8FAFC' : '#0F172A',
             headerTitleStyle: {
-              fontWeight: '700',
+              fontWeight: '600',
               color: isDark ? '#F8FAFC' : '#0F172A',
             },
           }}

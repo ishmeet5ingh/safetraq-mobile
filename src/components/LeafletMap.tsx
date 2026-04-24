@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import WebView from 'react-native-webview';
 import leafletHtml from '../utils/leafletHtml';
 
@@ -42,7 +42,7 @@ const LeafletMap = ({ currentUserMarker, otherMarkers }: LeafletMapProps) => {
   }, [currentUserMarker, otherMarkers, isMapReady]);
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 overflow-hidden rounded-[12px] bg-light-card dark:bg-dark-card">
       <WebView
         ref={webViewRef}
         originWhitelist={['*']}
@@ -63,11 +63,3 @@ const LeafletMap = ({ currentUserMarker, otherMarkers }: LeafletMapProps) => {
 };
 
 export default LeafletMap;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    overflow: 'hidden',
-    borderRadius: 16,
-  },
-});

@@ -58,7 +58,7 @@ const AuthInput = ({
 }: AuthInputProps) => {
   return (
     <View className="mb-3">
-      <Text className="mb-2 text-[13px] font-bold text-light-text dark:text-dark-text">
+      <Text className="mb-2 text-[13px] font-semibold text-light-text dark:text-dark-text">
         {label}
       </Text>
 
@@ -83,7 +83,7 @@ const AuthInput = ({
             onPress={onRightPress}
             className="px-3 py-2"
           >
-            <Text className="text-[13px] font-bold text-brand-primary">
+            <Text className="text-[13px] font-semibold text-brand-primary">
               {rightText}
             </Text>
           </TouchableOpacity>
@@ -306,7 +306,7 @@ const AuthScreen = ({ navigation, route }: Props) => {
                   color="#FFFFFF"
                   style={{ marginLeft: 6 }}
                 />
-                <Text className="text-[13px] font-bold text-light-heroText dark:text-dark-heroText">
+                <Text className="text-[13px] font-semibold text-light-heroText dark:text-dark-heroText">
                   Back
                 </Text>
 
@@ -334,13 +334,13 @@ const AuthScreen = ({ navigation, route }: Props) => {
 
               <View className="mt-[18px] flex-row flex-wrap">
                 <View className="mb-2 mr-2 rounded-full border border-light-badgeBorder bg-light-badge px-3 py-2 dark:border-dark-badgeBorder dark:bg-dark-badge">
-                  <Text className="text-[12px] font-bold text-light-heroText dark:text-dark-heroText">
+                  <Text className="text-[12px] font-semibold text-light-heroText dark:text-dark-heroText">
                     Live Sessions
                   </Text>
                 </View>
 
                 <View className="mb-2 mr-2 rounded-full border border-light-badgeBorder bg-light-badge px-3 py-2 dark:border-dark-badgeBorder dark:bg-dark-badge">
-                  <Text className="text-[12px] font-bold text-light-heroText dark:text-dark-heroText">
+                  <Text className="text-[12px] font-semibold text-light-heroText dark:text-dark-heroText">
                     Trusted Circles
                   </Text>
                 </View>
@@ -360,7 +360,7 @@ const AuthScreen = ({ navigation, route }: Props) => {
                   onPress={() => switchMode('login')}
                 >
                   <Text
-                    className={`text-[15px] font-bold ${mode === 'login'
+                    className={`text-[15px] font-semibold ${mode === 'login'
                       ? 'text-white'
                       : 'text-light-subtext dark:text-dark-subtext'
                       }`}
@@ -376,7 +376,7 @@ const AuthScreen = ({ navigation, route }: Props) => {
                   onPress={() => switchMode('register')}
                 >
                   <Text
-                    className={`text-[15px] font-bold ${mode === 'register'
+                    className={`text-[15px] font-semibold ${mode === 'register'
                       ? 'text-white'
                       : 'text-light-subtext dark:text-dark-subtext'
                       }`}

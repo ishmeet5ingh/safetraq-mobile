@@ -1,97 +1,193 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# SafeTraq Mobile
 
-# Getting Started
+SafeTraq Mobile is the React Native client for a personal-safety app built around consent-based live location sharing, trusted circles, and emergency escalation.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+The app is designed for real-life movement:
+- start a temporary live share before a commute or trip
+- share only with selected circles
+- stop sharing at any time
+- trigger SOS when help is needed
+- keep privacy controls visible instead of hidden in settings
 
-## Step 1: Start Metro
+## Core Product Idea
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+SafeTraq helps a user stay connected to people they trust while traveling, commuting, or moving through situations where extra visibility matters.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+The mobile app focuses on:
+- onboarding and authentication
+- trusted circle creation and member invites
+- live session setup and management
+- map-based active session tracking
+- privacy defaults for future sessions
+- emergency SOS flows
 
-```sh
-# Using npm
-npm start
+## Main Features
 
-# OR using Yarn
-yarn start
+### Authentication
+- landing experience with branded onboarding
+- unified login and registration flow
+- persisted auth restoration on app launch
+
+### Trusted Circles
+- create circles for family, partner, friends, or team
+- invite members by email
+- review pending invitations
+- open circle details and share directly with a selected circle
+
+### Live Sharing
+- start a time-bound live session
+- choose a target circle
+- update location in real time
+- view current session status and map markers
+- pause, resume, or stop a session
+
+### Privacy and Safety
+- default sharing duration
+- battery-aware tracking mode
+- arrival prompt preference
+- audit visibility preference
+- emergency SOS trigger with current location
+
+### UX and Branding
+- dark and light theme support
+- custom SafeTraq app icon and launch branding
+- professional bottom-tab navigation
+- Tailwind-style UI via NativeWind
+
+## Tech Stack
+
+- React Native 0.84
+- TypeScript
+- React Navigation
+- Redux Toolkit
+- NativeWind
+- Axios
+- Socket.IO client
+- `react-native-geolocation-service`
+- `react-native-webview` for the Leaflet map surface
+
+## Project Structure
+
+```text
+src/
+  api/                Axios setup
+  components/         Shared UI pieces such as the map
+  context/            Theme context
+  hooks/              Redux hooks
+  navigation/         Stack and tab navigators
+  screens/            App screens
+  services/           API, socket, and location services
+  store/              Redux store and slices
+  types/              Shared TypeScript types
+  utils/              Constants and Leaflet HTML
+assets/
+  branding/           SafeTraq logo and generated brand assets
 ```
 
-## Step 2: Build and run your app
+## Important Screens
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+- `LandingScreen`: first-touch branded onboarding
+- `AuthScreen`: login and registration
+- `HomeScreen`: dashboard for live share, circles, invites, and privacy
+- `LiveShareSetupScreen`: create a live share session
+- `ActiveSessionScreen`: map and controls for an active session
+- `CirclesScreen`: create and manage trusted circles
+- `CircleDetailScreen`: invite people and share with one circle
+- `InvitesScreen`: accept or decline incoming invites
+- `PrivacyDashboardScreen`: default privacy and safety controls
+- `SOSScreen`: emergency escalation flow
+
+## Development Setup
+
+### Prerequisites
+
+- Node.js `>= 22.11.0`
+- React Native Android/iOS environment set up
+- Xcode and CocoaPods for iOS
+- Android Studio for Android
+
+### Install dependencies
+
+```sh
+npm install
+```
+
+### Start Metro
+
+```sh
+npm start
+```
+
+If NativeWind or asset changes are not reflecting correctly:
+
+```sh
+npm start -- --reset-cache
+```
+
+## Run the App
 
 ### Android
 
 ```sh
-# Using npm
 npm run android
+```
 
-# OR using Yarn
-yarn android
+If native assets, permissions, or launcher icons changed:
+
+```sh
+cd android
+./gradlew clean
+cd ..
+npx react-native run-android
 ```
 
 ### iOS
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
 ```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+cd ios
+pod install
+cd ..
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Backend Connection
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+This client expects the SafeTraq backend to be running separately.
 
-## Step 3: Modify your app
+The app communicates with the backend for:
+- auth
+- circles and invites
+- live session lifecycle
+- SOS submission
+- socket-based live updates
 
-Now that you have successfully run the app, let's make changes!
+Review the API base URL in:
+- [src/api/axios.ts](/Users/ishmeetsingh/Desktop/safetraq/safetraq-mobile/src/api/axios.ts)
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Useful Commands
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+```sh
+npm run android
+npm run ios
+npm start
+npm test
+npx tsc --noEmit
+```
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## Current Product Direction
 
-## Congratulations! :tada:
+SafeTraq is not a public-map social app.
 
-You've successfully run and modified your React Native App. :partying_face:
+It is a privacy-aware safety product built around:
+- temporary visibility
+- trusted relationships
+- explicit sharing
+- revocable access
+- emergency escalation when needed
 
-### Now what?
+## Notes
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- Location permissions must be granted for live sharing and SOS location capture.
+- App icon, launch logo, and in-app branding are customized for SafeTraq.
+- Bottom tabs are defined in:
+  - [MainTabsNavigator.tsx](/Users/ishmeetsingh/Desktop/safetraq/safetraq-mobile/src/navigation/MainTabsNavigator.tsx)
